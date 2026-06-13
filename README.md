@@ -124,3 +124,11 @@ src/finsight/
 Conventional commits: `feat:`, `fix:`, `docs:`, `test:`, `refactor:`
 
 Every feature lives on a branch and merges via PR with tests.
+
+### Note on `CLAUDE.md`
+
+This repo includes a `CLAUDE.md` file with project context, architecture, and
+coding standards for AI coding assistants. It's the same idea as a
+`CONTRIBUTING.md` aimed at an AI pair-programmer — it doesn't affect the
+runtime app and isn't required reading for human contributors, though it's a
+useful overview of project conventions.
