@@ -46,3 +46,4 @@ data/*.json
 
 # Docs build
 site/
+claude-code-prompts.md
