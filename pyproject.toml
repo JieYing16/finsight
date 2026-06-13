@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "finsight"
+version = "0.1.0"
+description = "A data-driven personal financial advisor agent"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Lim Jie Ying", email = "jie-ying.lim@outlook.com" }]
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.26",
+    "yfinance>=0.2",
+    "typer>=0.12",
+    "rich>=13.0",
+    "statsmodels>=0.14",
+    "scipy>=1.11",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+finsight = "finsight.cli:app"
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
