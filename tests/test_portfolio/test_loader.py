@@ -1,5 +1,7 @@
 """Tests for finsight.portfolio.loader."""
 
+# pylint: disable=missing-function-docstring,redefined-outer-name
+
 from __future__ import annotations
 
 import json
@@ -35,8 +37,18 @@ def csv_file(tmp_path: Path) -> Path:
 def json_array_file(tmp_path: Path) -> Path:
     p = tmp_path / "portfolio.json"
     data = [
-        {"ticker": "VTI", "shares": 50, "purchase_price": 180.25, "purchase_date": "2022-01-15"},
-        {"ticker": "BND", "shares": 30, "purchase_price": 82.10, "purchase_date": "2022-01-15"},
+        {
+            "ticker": "VTI",
+            "shares": 50,
+            "purchase_price": 180.25,
+            "purchase_date": "2022-01-15",
+        },
+        {
+            "ticker": "BND",
+            "shares": 30,
+            "purchase_price": 82.10,
+            "purchase_date": "2022-01-15",
+        },
     ]
     p.write_text(json.dumps(data))
     return p
@@ -48,7 +60,12 @@ def json_holdings_file(tmp_path: Path) -> Path:
     data = {
         "name": "My Portfolio",
         "holdings": [
-            {"ticker": "VTI", "shares": 50, "purchase_price": 180.25, "purchase_date": "2022-01-15"},
+            {
+                "ticker": "VTI",
+                "shares": 50,
+                "purchase_price": 180.25,
+                "purchase_date": "2022-01-15",
+            },
         ],
     }
     p.write_text(json.dumps(data))
@@ -76,7 +93,9 @@ def test_load_csv_column_types(csv_file: Path) -> None:
 
 def test_load_csv_ticker_uppercased(tmp_path: Path) -> None:
     p = tmp_path / "p.csv"
-    p.write_text("ticker,shares,purchase_price,purchase_date\nvti,10,100.0,2023-01-01\n")
+    p.write_text(
+        "ticker,shares,purchase_price,purchase_date\nvti,10,100.0,2023-01-01\n"
+    )
     df = load_portfolio(p)
     assert df["ticker"].iloc[0] == "VTI"
 

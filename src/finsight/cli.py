@@ -32,7 +32,9 @@ _DISCLAIMER = (
 
 @app.command()
 def load(
-    filepath: Path = typer.Argument(..., help="Path to a .csv or .json portfolio file."),
+    filepath: Path = typer.Argument(
+        ..., help="Path to a .csv or .json portfolio file."
+    ),
 ) -> None:
     """Load a portfolio file and display a summary table."""
     try:
@@ -64,7 +66,9 @@ def load(
         )
 
     console.print(table)
-    console.print(f"\n[bold]Total portfolio value (at cost):[/bold] ${total_value:,.2f}")
+    console.print(
+        f"\n[bold]Total portfolio value (at cost):[/bold] ${total_value:,.2f}"
+    )
     console.print(f"[bold]Holdings:[/bold] {len(df)}")
     console.print(f"\n{_DISCLAIMER}")
 

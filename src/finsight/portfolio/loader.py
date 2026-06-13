@@ -72,6 +72,8 @@ def _coerce_types(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["ticker"] = df["ticker"].astype(str).str.strip().str.upper()
     df["shares"] = pd.to_numeric(df["shares"], errors="raise").astype(float)
-    df["purchase_price"] = pd.to_numeric(df["purchase_price"], errors="raise").astype(float)
+    df["purchase_price"] = pd.to_numeric(
+        df["purchase_price"], errors="raise"
+    ).astype(float)
     df["purchase_date"] = pd.to_datetime(df["purchase_date"], errors="raise")
     return df.reset_index(drop=True)
