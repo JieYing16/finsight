@@ -47,3 +47,39 @@ Merging to `main` still requires explicit owner confirmation (see `CLAUDE.md`).
   the free-tier rate/context limits.
 - **Cost:** free tier is rate-limited per minute/day. If you hit limits on busy
   days, gate the job behind a `pr-review` label instead of every PR.
+
+---
+
+# Apply-review agent (the fix-it agent)
+
+A second, **on-demand** agent applies the review agent's recommendations.
+
+- **Files:** `.github/workflows/apply-review.yml`,
+  `.github/scripts/build_apply_prompt.py`,
+  `.github/scripts/apply_response.py`.
+- **Trigger:** comment **`/apply-review`** on a PR.
+- **Engine:** GitHub Models (free), same as the review agent.
+
+## What it does
+
+1. Resolves the PR branch (refuses forked PRs — can't push to those).
+2. Reads the latest review comment plus the full contents of the changed files.
+3. Asks the model to return complete updated files addressing the
+   recommendations (minimal changes only; disclaimers/type hints preserved).
+4. Writes the files, then runs `ruff format` + `ruff check --fix` + `pytest` on
+   the changed files.
+5. **If tests pass:** commits `fix: apply PR review recommendations` to the PR
+   branch and comments the file list. **If tests fail:** commits nothing and
+   comments the pytest output so you can fix it manually.
+
+It never merges, and never touches `.git`/`.venv` or paths outside the repo.
+
+## Notes & limits
+
+- `issue_comment` workflows run from the **default branch**, so this workflow
+  and the scripts must be on `main`, and the target PR branch must also contain
+  `.github/scripts/*` (true for branches cut after this is merged).
+- A push made with the built-in `GITHUB_TOKEN` does **not** re-trigger the
+  review workflow, so there's no fix/review loop. Re-run the review manually
+  (e.g. an empty commit or re-open) if you want a fresh review of the fixes.
+- Always read the auto-generated commit before merging — it's model output.
