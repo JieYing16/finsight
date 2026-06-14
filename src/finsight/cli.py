@@ -129,11 +129,10 @@ def summary(
     total_value = df["market_value"].sum()
     total_cost = df["cost_basis"].sum()
     total_gl = total_value - total_cost
-    total_glp = total_gl / total_cost * 100
     sign = "+" if total_gl >= 0 else ""
+    gl_summary = f"{sign}${total_gl:,.2f} ({sign}{total_gl / total_cost * 100:.2f}%)"
     console.print(f"\n[bold]Total market value:[/bold] ${total_value:,.2f}")
     console.print(f"[bold]Total cost basis:[/bold]   ${total_cost:,.2f}")
-    gl_summary = f"{sign}${total_gl:,.2f} ({sign}{total_glp:.2f}%)"
     console.print(f"[bold]Total gain / loss:[/bold]  {gl_summary}")
     console.print(f"\n{_DISCLAIMER}")
 

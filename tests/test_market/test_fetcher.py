@@ -34,7 +34,7 @@ def _multiindex_df(
 
 
 def _flat_df(
-    ticker: str, prices: list[float], dates: list[str] | None = None
+    _ticker: str, prices: list[float], dates: list[str] | None = None
 ) -> pd.DataFrame:
     """Return a yfinance-style flat-column DataFrame for a single ticker."""
     if dates is None:
@@ -84,7 +84,7 @@ def test_fetch_current_prices_uses_latest_row() -> None:
 
 def test_fetch_current_prices_empty_list() -> None:
     result = fetch_current_prices([])
-    assert result == {}
+    assert not result
 
 
 def test_fetch_current_prices_no_data_raises() -> None:
