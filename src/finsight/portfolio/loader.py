@@ -13,17 +13,23 @@ _REQUIRED_COLUMNS = {"ticker", "shares", "purchase_price", "purchase_date"}
 def load_portfolio(filepath: str | Path) -> pd.DataFrame:
     """Load a portfolio file and return a validated, typed DataFrame.
 
-    Args:
-        filepath: Path to a ``.csv`` or ``.json`` portfolio file.
+    Parameters
+    ----------
+    filepath : str or Path
+        Path to a ``.csv`` or ``.json`` portfolio file.
 
-    Returns:
-        DataFrame with columns: ticker (str), shares (float),
-        purchase_price (float), purchase_date (datetime).
+    Returns
+    -------
+    pd.DataFrame
+        Columns: ticker (str), shares (float), purchase_price (float),
+        purchase_date (datetime).
 
-    Raises:
-        FileNotFoundError: If *filepath* does not exist.
-        ValueError: If the file format is unsupported or required columns
-            are missing.
+    Raises
+    ------
+    FileNotFoundError
+        If *filepath* does not exist.
+    ValueError
+        If the file format is unsupported or required columns are missing.
     """
     path = Path(filepath)
     if not path.exists():

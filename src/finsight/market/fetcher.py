@@ -11,14 +11,20 @@ import yfinance as yf
 def fetch_current_prices(tickers: list[str]) -> dict[str, float]:
     """Fetch the latest closing price for each ticker.
 
-    Args:
-        tickers: List of ticker symbols (e.g. ["VTI", "BND"]).
+    Parameters
+    ----------
+    tickers : list[str]
+        List of ticker symbols (e.g. ["VTI", "BND"]).
 
-    Returns:
+    Returns
+    -------
+    dict[str, float]
         Mapping of ticker → most recent closing price.
 
-    Raises:
-        ValueError: If no price data is returned for any ticker.
+    Raises
+    ------
+    ValueError
+        If no price data is returned for any ticker.
     """
     if not tickers:
         return {}
@@ -51,13 +57,19 @@ def fetch_historical_prices(
 ) -> pd.DataFrame:
     """Fetch daily closing prices for a date range.
 
-    Args:
-        tickers: List of ticker symbols.
-        start: Start date (inclusive), ISO string or :class:`datetime.date`.
-        end: End date (inclusive), ISO string or :class:`datetime.date`.
+    Parameters
+    ----------
+    tickers : list[str]
+        List of ticker symbols.
+    start : str or datetime.date
+        Start date (inclusive).
+    end : str or datetime.date
+        End date (inclusive).
 
-    Returns:
-        DataFrame indexed by date with one column per ticker (close prices).
+    Returns
+    -------
+    pd.DataFrame
+        Indexed by date with one column per ticker (close prices).
     """
     if not tickers:
         return pd.DataFrame()
@@ -71,11 +83,15 @@ def fetch_historical_prices(
 def enrich_portfolio(df: pd.DataFrame) -> pd.DataFrame:
     """Add live market columns to a portfolio DataFrame.
 
-    Args:
-        df: Portfolio DataFrame from :func:`~finsight.portfolio.loader.load_portfolio`.
-            Must contain: ticker, shares, purchase_price.
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Portfolio DataFrame from :func:`~finsight.portfolio.loader.load_portfolio`.
+        Must contain: ticker, shares, purchase_price.
 
-    Returns:
+    Returns
+    -------
+    pd.DataFrame
         Copy of *df* with added columns: current_price, market_value, cost_basis,
         gain_loss, gain_loss_pct, weight_pct.
     """
