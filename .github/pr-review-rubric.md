@@ -13,7 +13,7 @@ something is done well, say so briefly.
 ## 1. Code quality & standards
 
 - **Type hints** on every new/changed function (params and return).
-- **Google-style docstrings** on new/changed public functions and classes.
+- **NumPy-style docstrings** on new/changed public functions and classes.
 - **Method correctness & design**: does the logic do what its name/docstring
   claims? Watch for off-by-one errors, wrong axis on pandas/numpy ops, mutable
   default args, bare/silent `except`, and unhandled edge cases (empty input,
@@ -65,7 +65,7 @@ something is done well, say so briefly.
 
 ### Standards checklist
 - [ ] Type hints on new/changed functions
-- [ ] Google-style docstrings
+- [ ] NumPy-style docstrings
 - [ ] Tests cover new/changed behaviour (incl. an edge case)
 - [ ] Methods/formulas appear correct
 - [ ] No real data / PII / secrets committed

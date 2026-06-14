@@ -48,7 +48,7 @@ jobs:
 
           # GitHub Models' free tier has a limited context window, so cap the
           # diff. ~45000 chars is a safe budget; note truncation if it happens.
-          MAX=45000
+          MAX=14000
           if [ "$(wc -c < pr.diff)" -gt "$MAX" ]; then
             head -c "$MAX" pr.diff > pr.diff.capped
             echo "" >> pr.diff.capped
@@ -73,7 +73,7 @@ jobs:
         uses: actions/ai-inference@v1
         with:
           model: openai/gpt-4o-mini
-          max-completion-tokens: 2000
+          max-tokens: 2000
           system-prompt-file: .github/pr-review-rubric.md
           prompt-file: prompt.txt
 
