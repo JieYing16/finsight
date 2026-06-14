@@ -13,7 +13,6 @@ import pytest
 
 from finsight.portfolio.loader import load_portfolio
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -85,7 +84,7 @@ def test_load_csv_returns_dataframe(csv_file: Path) -> None:
 
 def test_load_csv_column_types(csv_file: Path) -> None:
     df = load_portfolio(csv_file)
-    assert df["ticker"].dtype == object
+    assert pd.api.types.is_string_dtype(df["ticker"])
     assert pd.api.types.is_float_dtype(df["shares"])
     assert pd.api.types.is_float_dtype(df["purchase_price"])
     assert pd.api.types.is_datetime64_any_dtype(df["purchase_date"])
