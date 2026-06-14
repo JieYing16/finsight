@@ -1,0 +1,163 @@
+name: Apply PR Review
+
+# On-demand fix-it agent. Comment `/apply-review` on a PR and this workflow asks
+# GitHub Models (free) to apply the PR review agent's recommendations, validates
+# with Ruff + pytest, and pushes a commit to the PR branch. It never merges.
+#
+# Note: issue_comment workflows always run from the DEFAULT branch, so this file
+# (and .github/scripts/*) must be present on main, and the target PR branch must
+# also contain .github/scripts/* (true for branches cut after this is merged).
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write       # push the fix commit to the PR branch
+  pull-requests: write  # comment back on the PR
+  models: read          # GitHub Models inference
+
+concurrency:
+  group: apply-review-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  apply:
+    # Only on PR comments that contain the command.
+    if: >-
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/apply-review')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Acknowledge command
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes',
+            });
+
+      - name: Resolve PR branch
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          PR=${{ github.event.issue.number }}
+          DATA=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" \
+            --json headRefName,baseRefName,isCrossRepository)
+          echo "number=$PR" >> "$GITHUB_OUTPUT"
+          echo "head=$(jq -r .headRefName <<<"$DATA")" >> "$GITHUB_OUTPUT"
+          echo "base=$(jq -r .baseRefName <<<"$DATA")" >> "$GITHUB_OUTPUT"
+          echo "cross=$(jq -r .isCrossRepository <<<"$DATA")" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse cross-fork PRs
+        if: steps.pr.outputs.cross == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment ${{ steps.pr.outputs.number }} --repo "$GITHUB_REPOSITORY" \
+            --body "⚠️ \`/apply-review\` can't push to a forked PR branch. Run it from a branch in this repo."
+          exit 1
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr.outputs.head }}
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Collect recommendations and changed files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ steps.pr.outputs.base }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$BASE" --depth=1
+          git diff --name-only "origin/$BASE...HEAD" -- . \
+            ':(exclude).venv/**' ':(exclude)**/*.lock' > changed.txt
+          gh api "repos/$GITHUB_REPOSITORY/issues/${{ steps.pr.outputs.number }}/comments" \
+            --paginate \
+            -q '.[] | select(.body | contains("finsight-pr-review")) | .body' \
+            | tail -n 200 > recs.md || true
+
+      - name: Build prompt
+        env:
+          RECS_FILE: recs.md
+          CHANGED_FILE: changed.txt
+          PROMPT_FILE: prompt.txt
+        run: python .github/scripts/build_apply_prompt.py
+
+      - name: Generate fixes (GitHub Models)
+        id: inference
+        uses: actions/ai-inference@v1
+        with:
+          model: openai/gpt-4o-mini
+          max-completion-tokens: 4000
+          system-prompt: "You apply code review fixes precisely and minimally, returning complete updated files."
+          prompt-file: prompt.txt
+
+      - name: Apply fixes to working tree
+        id: write
+        env:
+          RESPONSE_FILE: ${{ steps.inference.outputs.response-file }}
+        run: |
+          set +e
+          python .github/scripts/apply_response.py
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Report nothing to change
+        if: steps.write.outputs.code == '2'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment ${{ steps.pr.outputs.number }} --repo "$GITHUB_REPOSITORY" \
+            --body "🤖 \`/apply-review\`: no code changes were warranted from the latest review."
+
+      - name: Validate (Ruff + pytest)
+        if: steps.write.outputs.code == '0'
+        id: validate
+        run: |
+          set +e
+          python -m pip install --upgrade pip >/dev/null 2>&1
+          pip install -e ".[dev]" >/dev/null 2>&1
+          PYFILES=$(git diff --name-only -- '*.py')
+          if [ -n "$PYFILES" ]; then
+            ruff format $PYFILES >/dev/null 2>&1
+            ruff check --fix $PYFILES > ruff.log 2>&1
+          fi
+          pytest -q > pytest.log 2>&1
+          echo "tests=$?" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push, or report failure
+        if: steps.write.outputs.code == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTS: ${{ steps.validate.outputs.tests }}
+        run: |
+          set -euo pipefail
+          PR=${{ steps.pr.outputs.number }}
+          if git diff --quiet; then
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" \
+              --body "🤖 \`/apply-review\`: changes were a no-op after formatting; nothing to commit."
+            exit 0
+          fi
+          FILES=$(git diff --name-only | sed 's/^/- `/; s/$/`/')
+          if [ "$TESTS" != "0" ]; then
+            TESTLOG=$(tail -c 3000 pytest.log)
+            git stash -u >/dev/null || true
+            gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$(printf '🚫 `/apply-review`: generated fixes but **tests failed**, so nothing was committed.\n\nFiles it tried to change:\n%s\n\n<details><summary>pytest output</summary>\n\n```\n%s\n```\n\n</details>' "$FILES" "$TESTLOG")"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "fix: apply PR review recommendations"
+          git push origin "HEAD:${{ steps.pr.outputs.head }}"
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body "$(printf '✅ `/apply-review`: applied review recommendations and pushed a commit. Ruff + pytest pass.\n\nFiles changed:\n%s\n\n*Automated change — please review before merging. Educational/informational only; not financial advice.*' "$FILES")"
